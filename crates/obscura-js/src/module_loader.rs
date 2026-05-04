@@ -54,6 +54,12 @@ impl ModuleLoader for ObscuraModuleLoader {
         let url = module_specifier.to_string();
 
         ModuleLoadResponse::Async(Pin::from(Box::new(async move {
+            let module_specifier = url::Url::parse(&url)
+                .map_err(|e| io_err(format!("Invalid module URL {}: {}", url, e)))?;
+
+            obscura_net::validate_url(&module_specifier)
+                .map_err(|e| io_err(format!("Module URL blocked: {}", e)))?;
+
             let client = reqwest::Client::builder()
                 .build()
                 .map_err(|e| io_err(format!("HTTP client error: {}", e)))?;
@@ -79,13 +85,10 @@ impl ModuleLoader for ObscuraModuleLoader {
                 io_err(format!("Failed to read module body {}: {}", url, e))
             })?;
 
-            let specifier = ModuleSpecifier::parse(&url)
-                .map_err(|e| io_err(format!("Invalid module URL {}: {}", url, e)))?;
-
             Ok(ModuleSource::new(
                 deno_core::ModuleType::JavaScript,
                 ModuleSourceCode::String(code.into()),
-                &specifier,
+                &module_specifier,
                 None,
             ))
         })))

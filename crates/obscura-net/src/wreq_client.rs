@@ -15,7 +15,7 @@ use url::Url;
 #[cfg(feature = "stealth")]
 use crate::cookies::CookieJar;
 #[cfg(feature = "stealth")]
-use crate::client::{Response, ObscuraNetError};
+use crate::client::{Response, ObscuraNetError, validate_url};
 
 #[cfg(feature = "stealth")]
 pub const STEALTH_USER_AGENT: &str =
@@ -113,6 +113,7 @@ impl StealthHttpClient {
                     let next_url = current_url.join(location_str).map_err(|e| {
                         ObscuraNetError::Network(format!("Invalid redirect URL: {}", e))
                     })?;
+                    validate_url(&next_url)?;
                     redirects.push(current_url.clone());
                     current_url = next_url;
                     continue;
